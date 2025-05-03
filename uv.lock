@@ -1,0 +1,7 @@
+version = 1
+requires-python = ">=3.11"
+
+[[package]]
+name = "tk-base-utils"
+version = "0.1.0"
+source = { virtual = "." }
