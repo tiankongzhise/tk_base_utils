@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Iterator
 from datetime import datetime
-
+from .deprecate import deprecated
 def _is_interactive():
     """Decide whether this is running in a REPL or IPython notebook"""
     '''code copy from python-dotenv->load_dotenv->find_dotenv'''
@@ -64,7 +64,8 @@ def get_target_file_path(filename: str,
     """Returns the path of the target file."""
     '''code copy from python-dotenv->load_dotenv->find_dotenv'''
     current_file_path = get_current_dir_path(usecwd)
-    for dir in _walk_to_root(current_file_path):
+    currrent_file_path_str = str(current_file_path.resolve())
+    for dir in _walk_to_root(currrent_file_path_str):
         target_file_path = Path(dir) /filename
         if target_file_path.exists():
             return target_file_path
@@ -94,16 +95,28 @@ def get_root_dir_path(target_file_name: str =None):
                 return temp_path
 
     return current_dir
-
+@deprecated('该函数从0.1.1版本开始被废弃,预计在0.2.0版本删除,请改用get_abs_path',category=None)
 def get_abs_file_path(file_name:str) -> Path:
     '''获取绝对路径'''
-    if file_name[0] == '.':
-        keywords_file_dir = get_current_dir_path()
-    elif file_name[0] == '$':
+    if file_name[0] == '$':
         keywords_file_dir = get_root_dir_path()
     else:
-        raise ValueError("file_name.或者$开头,.标识获取当前目录下的文件,或者以$开头,标识获取根目录下的文件")
-    file_path = keywords_file_dir / file_name[1:].lstrip('/')
+        keywords_file_dir = get_current_dir_path()
+    if file_name[0] in ['.','$']:
+        file_path = keywords_file_dir / file_name[1:].lstrip('/')
+    else:
+        file_path = keywords_file_dir / file_name.lstrip('/')
+    return file_path
+def get_abs_path(file_name:str) -> Path:
+    '''获取绝对路径'''
+    if file_name[0] == '$':
+        keywords_file_dir = get_root_dir_path()
+    else:
+        keywords_file_dir = get_current_dir_path()
+    if file_name[0] in ['.','$']:
+        file_path = keywords_file_dir / file_name[1:].lstrip('/')
+    else:
+        file_path = keywords_file_dir / file_name.lstrip('/')
     return file_path
 
 def create_file_name_with_time(file_name:str|Path):
