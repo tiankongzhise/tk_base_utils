@@ -1,6 +1,6 @@
 import os
 import sys
-import tomllib
+
 from typing import Iterator
 from pathlib import Path
 
@@ -73,7 +73,7 @@ def _find_file(
     return ""
 
 
-def find_toml(
+def find_file(
     filename: str,
     raise_error_if_not_found: bool = False,
     usecwd: bool = False)->Path:
@@ -93,39 +93,4 @@ def find_toml(
     except:
         raise
         
-def load_toml(toml_name_or_path: str|Path|None = None,
-              raise_error_if_not_found: bool = True,
-              usecwd: bool = False)->dict:
-    """
-    Load toml file from increasingly higher folders for the given file
-
-    Returns toml value dict if found, or an empty dict otherwise
-    """
-    if toml_name_or_path is None:
-        toml_path = find_toml('config.toml')
-    elif isinstance(toml_name_or_path, str):
-        toml_path = find_toml(toml_name_or_path)
-    elif isinstance(toml_name_or_path, Path):
-        toml_path = toml_name_or_path
-    else:
-        raise TypeError("toml_name_or_path must be a string, Path, or None")
-    
-    
-    
-    if raise_error_if_not_found and toml_path == Path():
-        raise IOError("File not found")
-
-    if raise_error_if_not_found and not toml_path.is_file():
-        raise IOError("File is not a regular file")
-    
-    if raise_error_if_not_found and not toml_path.suffix == '.toml':
-        raise IOError("File suffix is not .toml")
-    
-    try:
-        # 未找到toml文件且不需要报错的情况 返回一个空字典
-        if toml_path == Path():
-            return {}
-        with open(toml_path, "rb") as f:
-            return tomllib.load(f)
-    except tomllib.TOMLDecodeError as e:
-        raise IOError(f"Error decoding TOML file: {e}") from e
+        

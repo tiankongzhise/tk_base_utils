@@ -10,7 +10,7 @@ from .file import (get_current_dir_path,
 from .toml import load_toml
 from .list import preserve_order_deduplicate
 from .date import generate_date_ranges
-
+from .path_module import find_file
 
 
 __all__ = [
@@ -21,6 +21,7 @@ __all__ = [
     "generate_date_ranges",
     "get_abs_file_path",
     "get_root_dir_path",
+    "find_file"
 
 ]
 
