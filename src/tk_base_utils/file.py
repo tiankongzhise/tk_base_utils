@@ -5,7 +5,8 @@ import os
 from pathlib import Path
 from typing import Iterator
 from datetime import datetime
-from .deprecate import deprecated
+from warnings import warn,deprecated
+
 def _is_interactive():
     """Decide whether this is running in a REPL or IPython notebook"""
     '''code copy from python-dotenv->load_dotenv->find_dotenv'''
@@ -95,9 +96,11 @@ def get_root_dir_path(target_file_name: str =None):
                 return temp_path
 
     return current_dir
-@deprecated('该函数从0.1.1版本开始被废弃,预计在0.2.0版本删除,请改用get_abs_path',category=None)
+@deprecated('get_abs_file_path is deprecated, use get_abs_path instead',category=None,stacklevel=2)
 def get_abs_file_path(file_name:str) -> Path:
     '''获取绝对路径'''
+    warn("get_abs_file_path is deprecated, use get_abs_path instead",DeprecationWarning,stacklevel=2)
+
     if file_name[0] == '$':
         keywords_file_dir = get_root_dir_path()
     else:
