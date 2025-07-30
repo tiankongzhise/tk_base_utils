@@ -5,7 +5,8 @@ import os
 from pathlib import Path
 from typing import Iterator
 from datetime import datetime
-from warnings import warn,deprecated
+# from warnings import warn
+# from warnings import deprecated
 
 def _is_interactive():
     """Decide whether this is running in a REPL or IPython notebook"""
@@ -96,20 +97,20 @@ def get_root_dir_path(target_file_name: str =None):
                 return temp_path
 
     return current_dir
-@deprecated('get_abs_file_path is deprecated, use get_abs_path instead',category=None,stacklevel=2)
-def get_abs_file_path(file_name:str) -> Path:
-    '''获取绝对路径'''
-    warn("get_abs_file_path is deprecated, use get_abs_path instead",DeprecationWarning,stacklevel=2)
+# @deprecated('get_abs_file_path is deprecated, use get_abs_path instead',category=None,stacklevel=2)
+# def get_abs_file_path(file_name:str) -> Path:
+#     '''获取绝对路径'''
+#     warn("get_abs_file_path is deprecated, use get_abs_path instead",DeprecationWarning,stacklevel=2)
 
-    if file_name[0] == '$':
-        keywords_file_dir = get_root_dir_path()
-    else:
-        keywords_file_dir = get_current_dir_path()
-    if file_name[0] in ['.','$']:
-        file_path = keywords_file_dir / file_name[1:].lstrip('/')
-    else:
-        file_path = keywords_file_dir / file_name.lstrip('/')
-    return file_path
+#     if file_name[0] == '$':
+#         keywords_file_dir = get_root_dir_path()
+#     else:
+#         keywords_file_dir = get_current_dir_path()
+#     if file_name[0] in ['.','$']:
+#         file_path = keywords_file_dir / file_name[1:].lstrip('/')
+#     else:
+#         file_path = keywords_file_dir / file_name.lstrip('/')
+#     return file_path
 def get_abs_path(file_name:str) -> Path:
     '''获取绝对路径'''
     if file_name[0] == '$':
