@@ -3,7 +3,6 @@
 负责读取和解析config.toml配置文件。
 """
 
-import os
 import tomllib
 from typing import Dict, Any
 from pathlib import Path
@@ -32,7 +31,7 @@ class LoggerConfig:
         
         if self.config_path.exists():
             try:
-                with open(self.config_path, 'r', encoding='utf-8') as f:
+                with open(self.config_path, 'rb') as f:
                     config = tomllib.load(f)
                 # 合并默认配置和用户配置
                 default_config.update(config)
