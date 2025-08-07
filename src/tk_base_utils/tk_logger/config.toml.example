@@ -1,6 +1,6 @@
 [logging]
 # 日志器名称
-name = "temp3_logger"
+name = "tk_logger"
 
 # 日志级别 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 level = "INFO"

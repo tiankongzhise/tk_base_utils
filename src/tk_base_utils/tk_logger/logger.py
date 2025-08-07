@@ -7,8 +7,9 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from typing import Optional
+from pathlib import Path
 
-from .config import config
+from .config import config,set_config_path
 
 
 class CustomFormatter(logging.Formatter):
@@ -130,3 +131,14 @@ def reset_logger() -> None:
     主要用于测试或需要重新加载配置的场景。
     """
     SingletonLogger.reset()
+
+def reload_logger(config_path:str|Path|None = None) -> None:
+    """重新加载logger配置
+    
+    主要用于在运行时动态改变日志配置。
+    """
+    SingletonLogger.reset()
+    if config_path:
+        set_config_path(config_path)
+    print("logger配置已重新加载")
+    return get_logger()

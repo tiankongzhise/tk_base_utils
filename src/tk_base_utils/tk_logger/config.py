@@ -4,15 +4,15 @@
 """
 
 import os
-import toml
+import tomllib
 from typing import Dict, Any
-
+from pathlib import Path
 
 class LoggerConfig:
     """日志配置类"""
     
-    def __init__(self, config_path: str = "config.toml"):
-        self.config_path = config_path
+    def __init__(self, config_path: str | Path = "config.toml"):
+        self.config_path = Path(config_path)
         self._config = self._load_config()
     
     def _load_config(self) -> Dict[str, Any]:
@@ -30,10 +30,10 @@ class LoggerConfig:
             }
         }
         
-        if os.path.exists(self.config_path):
+        if self.config_path.exists():
             try:
                 with open(self.config_path, 'r', encoding='utf-8') as f:
-                    config = toml.load(f)
+                    config = tomllib.load(f)
                 # 合并默认配置和用户配置
                 default_config.update(config)
                 return default_config
@@ -41,18 +41,18 @@ class LoggerConfig:
                 print(f"警告: 读取配置文件失败 {e}，使用默认配置")
                 return default_config
         else:
-            # 如果配置文件不存在，创建默认配置文件
-            self._create_default_config(default_config)
+            # # 如果配置文件不存在，创建默认配置文件
+            # self._create_default_config(default_config)
             return default_config
     
-    def _create_default_config(self, config: Dict[str, Any]) -> None:
-        """创建默认配置文件"""
-        try:
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                toml.dump(config, f)
-            print(f"已创建默认配置文件: {self.config_path}")
-        except Exception as e:
-            print(f"警告: 创建配置文件失败 {e}")
+    # def _create_default_config(self, config: Dict[str, Any]) -> None:
+    #     """创建默认配置文件"""
+    #     try:
+    #         with open(self.config_path, 'w', encoding='utf-8') as f:
+    #             toml.dump(config, f)
+    #         print(f"已创建默认配置文件: {self.config_path}")
+    #     except Exception as e:
+    #         print(f"警告: 创建配置文件失败 {e}")
     
     @property
     def logging_config(self) -> Dict[str, Any]:
@@ -104,7 +104,7 @@ class LoggerConfig:
 _config_instance = None
 
 
-def set_config_path(config_path: str) -> None:
+def set_config_path(config_path: str|Path) -> None:
     """设置配置文件路径并重新初始化配置
     
     Args:
