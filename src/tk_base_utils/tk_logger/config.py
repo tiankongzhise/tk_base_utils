@@ -7,7 +7,7 @@ import tomllib
 from typing import Dict, Any
 from pathlib import Path
 
-class LoggerConfig:
+class TkLoggerConfig:
     """日志配置类"""
     
     def __init__(self, config_path: str | Path = "config.toml"):
@@ -103,30 +103,30 @@ class LoggerConfig:
 _config_instance = None
 
 
-def set_config_path(config_path: str|Path) -> None:
+def set_logger_config_path(config_path: str|Path) -> None:
     """设置配置文件路径并重新初始化配置
     
     Args:
         config_path: config.toml文件的路径
     """
     global _config_instance
-    _config_instance = LoggerConfig(config_path)
+    _config_instance = TkLoggerConfig(config_path)
 
 
-def get_config() -> LoggerConfig:
+def get_logger_config() -> TkLoggerConfig:
     """获取配置实例，如果未初始化则使用默认路径"""
     global _config_instance
     if _config_instance is None:
-        _config_instance = LoggerConfig()
+        _config_instance = TkLoggerConfig()
     return _config_instance
 
 
 # 为了向后兼容，保持config变量的访问方式
-class ConfigProxy:
+class TkLoggerConfigProxy:
     """配置代理类，确保配置的延迟初始化"""
     
     def __getattr__(self, name):
-        return getattr(get_config(), name)
+        return getattr(get_logger_config(), name)
 
 
-config = ConfigProxy()
+config = TkLoggerConfigProxy()

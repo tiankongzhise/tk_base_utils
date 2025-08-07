@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from typing import Optional
 from pathlib import Path
 
-from .config import config,set_config_path
+from .config import config,set_logger_config_path
 
 
 class CustomFormatter(logging.Formatter):
@@ -139,6 +139,6 @@ def reload_logger(config_path:str|Path|None = None) -> None:
     """
     SingletonLogger.reset()
     if config_path:
-        set_config_path(config_path)
+        set_logger_config_path(config_path)
     print("logger配置已重新加载")
     return get_logger()

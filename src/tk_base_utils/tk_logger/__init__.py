@@ -5,7 +5,12 @@
 
 from .logger import get_logger, reload_logger,reset_logger
 from .decorators import logger_wrapper
-from .config import set_config_path
+from .config import set_logger_config_path,get_logger_config
 
 __version__ = "0.1.1"
-__all__ = ["get_logger", "reload_logger","reset_logger", "logger_wrapper", "set_config_path"]
+__all__ = ["get_logger", 
+           "reload_logger",
+           "reset_logger", 
+           "logger_wrapper", 
+           "set_logger_config_path",
+           "get_logger_config"]
