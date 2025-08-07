@@ -9,7 +9,7 @@ from .toml import load_toml
 from .list import preserve_order_deduplicate
 from .date import generate_date_ranges
 from .path_module import find_file
-
+from .tk_logger import set_config_path,get_logger,logger_wrapper
 
 __all__ = [
     "get_current_dir_path",
@@ -21,4 +21,8 @@ __all__ = [
     "find_file",
     "get_abs_path",
     "create_file_name_with_time",
+    "set_config_path",
+    "get_logger",
+    "logger_wrapper",
+
 ]
