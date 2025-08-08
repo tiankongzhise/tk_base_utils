@@ -51,8 +51,7 @@ def _find_file(
         # will work for .py files
         frame = sys._getframe()
         current_file = __file__
-        print(f'current_file:{current_file}')
-        print(f'frame.f_code.co_filename:{frame.f_code.co_filename}')
+
 
         while frame.f_code.co_filename == current_file or not os.path.exists(
             frame.f_code.co_filename
@@ -61,7 +60,7 @@ def _find_file(
             frame = frame.f_back
         frame_filename = frame.f_code.co_filename
         path = os.path.dirname(os.path.abspath(frame_filename))
-    print(f'path:{path}')
+
     for dirname in _walk_to_root(path):
         check_path = os.path.join(dirname, filename)
         if os.path.isfile(check_path):
@@ -88,7 +87,6 @@ def find_file(
         path_str = _find_file(filename,
                                raise_error_if_not_found,
                                usecwd)
-        print(f'path_str:{[path_str]}')
         return Path(path_str)
     except:
         raise
