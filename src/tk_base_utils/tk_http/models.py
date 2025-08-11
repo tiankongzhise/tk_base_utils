@@ -2,7 +2,7 @@
 
 import json
 from typing import Dict, Optional, Any, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class RequestModel(BaseModel):
@@ -16,7 +16,7 @@ class RequestModel(BaseModel):
     json_data: Optional[Dict[str, Any]] = Field(default=None, description="JSON数据")
     timeout: Optional[float] = Field(default=None, description="超时时间")
     
-    @validator('method')
+    @field_validator('method')
     def validate_method(cls, v):
         """验证HTTP方法"""
         allowed_methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
@@ -24,7 +24,7 @@ class RequestModel(BaseModel):
             raise ValueError(f"HTTP method must be one of {allowed_methods}")
         return v.upper()
     
-    @validator('url')
+    @field_validator('url')
     def validate_url(cls, v):
         """验证URL格式"""
         if not v.startswith(('http://', 'https://')):
