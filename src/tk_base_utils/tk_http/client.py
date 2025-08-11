@@ -22,6 +22,10 @@ class HttpClient:
     
     基于httpx和pydantic的HTTP客户端，支持同步和异步调用，
     具备完善的请求响应校验、日志记录、超时控制和智能重试机制。
+    请求中的headers会和默认headers合并，且默认同时生效.
+    如果要禁用默认headers, 可以在请求中传入default_headers = False
+
+    
     """
     
     def __init__(self, config: Optional[ClientConfig] = None):
@@ -101,6 +105,9 @@ class HttpClient:
     
     def _prepare_request(self, method: str, url: str, **kwargs) -> Dict[str, Any]:
         """准备请求参数"""
+        # 检查是否禁用默认headers
+        disable_default_headers = kwargs.pop('default_headers', True) is False
+        
         # 验证请求模型
         try:
             request_model = RequestModel(
@@ -121,8 +128,19 @@ class HttpClient:
             'url': request_model.url
         }
         
-        if request_model.headers:
-            request_kwargs['headers'] = request_model.headers
+        # 处理headers
+        if disable_default_headers:
+            # 如果禁用默认headers，总是传递headers参数来覆盖默认行为
+            if request_model.headers:
+                # 有自定义headers时使用自定义headers
+                request_kwargs['headers'] = request_model.headers
+            else:
+                # 没有自定义headers时传递空字典来禁用默认headers
+                request_kwargs['headers'] = {}
+        else:
+            # 正常情况下，只有在有请求级别headers时才添加
+            if request_model.headers:
+                request_kwargs['headers'] = request_model.headers
         
         if request_model.params:
             request_kwargs['params'] = request_model.params
@@ -159,8 +177,17 @@ class HttpClient:
         start_time = time.time()
         
         try:
-            # 发送请求
-            httpx_response = self.sync_client.request(**request_kwargs)
+            # 检查是否需要使用无默认headers的客户端
+            if 'headers' in request_kwargs and request_kwargs['headers'] == {}:
+                # 创建临时的无默认headers的客户端
+                temp_kwargs = self._client_kwargs.copy()
+                temp_kwargs['headers'] = {}
+                with httpx.Client(**temp_kwargs) as temp_client:
+                    httpx_response = temp_client.request(**request_kwargs)
+            else:
+                # 使用正常的客户端
+                httpx_response = self.sync_client.request(**request_kwargs)
+            
             elapsed = time.time() - start_time
             
             # 记录响应日志
@@ -198,8 +225,17 @@ class HttpClient:
         start_time = time.time()
         
         try:
-            # 发送请求
-            httpx_response = await self.async_client.request(**request_kwargs)
+            # 检查是否需要使用无默认headers的客户端
+            if 'headers' in request_kwargs and request_kwargs['headers'] == {}:
+                # 创建临时的无默认headers的客户端
+                temp_kwargs = self._client_kwargs.copy()
+                temp_kwargs['headers'] = {}
+                async with httpx.AsyncClient(**temp_kwargs) as temp_client:
+                    httpx_response = await temp_client.request(**request_kwargs)
+            else:
+                # 使用正常的客户端
+                httpx_response = await self.async_client.request(**request_kwargs)
+            
             elapsed = time.time() - start_time
             
             # 记录响应日志
