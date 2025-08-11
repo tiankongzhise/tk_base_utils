@@ -137,6 +137,8 @@ class HttpClient:
             else:
                 # 没有自定义headers时传递空字典来禁用默认headers
                 request_kwargs['headers'] = {}
+            request_kwargs['disable_default_headers'] = True
+
         else:
             # 正常情况下，只有在有请求级别headers时才添加
             if request_model.headers:
@@ -178,10 +180,10 @@ class HttpClient:
         
         try:
             # 检查是否需要使用无默认headers的客户端
-            if 'headers' in request_kwargs and request_kwargs['headers'] == {}:
+            if request_kwargs.pop('disable_default_headers', False):
                 # 创建临时的无默认headers的客户端
                 temp_kwargs = self._client_kwargs.copy()
-                temp_kwargs['headers'] = {}
+                temp_kwargs['headers'] = request_kwargs.pop('headers', {})
                 with httpx.Client(**temp_kwargs) as temp_client:
                     httpx_response = temp_client.request(**request_kwargs)
             else:
@@ -226,10 +228,10 @@ class HttpClient:
         
         try:
             # 检查是否需要使用无默认headers的客户端
-            if 'headers' in request_kwargs and request_kwargs['headers'] == {}:
+            if request_kwargs.pop('disable_default_headers', False):
                 # 创建临时的无默认headers的客户端
                 temp_kwargs = self._client_kwargs.copy()
-                temp_kwargs['headers'] = {}
+                temp_kwargs['headers'] = request_kwargs.pop('headers', {})
                 async with httpx.AsyncClient(**temp_kwargs) as temp_client:
                     httpx_response = await temp_client.request(**request_kwargs)
             else:
