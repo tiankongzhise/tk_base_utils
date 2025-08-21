@@ -3,14 +3,16 @@
 提供全局唯一的logger和装饰器方式的日志记录功能。
 """
 
-from .logger import get_logger, reload_logger,reset_logger
-from .decorators import logger_wrapper
-from .config import set_logger_config_path,get_logger_config
+from .logger import get_logger, reload_logger, reset_logger, MultiInstanceLogger
+from .decorators import logger_wrapper, logger_wrapper_multi
+from .config import set_logger_config_path, get_logger_config
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __all__ = ["get_logger", 
            "reload_logger",
            "reset_logger", 
+           "MultiInstanceLogger",
            "logger_wrapper", 
+           "logger_wrapper_multi",
            "set_logger_config_path",
            "get_logger_config"]
