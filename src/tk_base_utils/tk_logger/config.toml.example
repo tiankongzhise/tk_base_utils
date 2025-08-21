@@ -2,7 +2,7 @@
 # 日志器名称
 name = "tk_logger"
 
-# 日志级别 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+# 日志级别 ("INFO_CONFIG","INFO_UTILS","INFO_DATABASE","INFO_KERNEL","INFO_CORE","INFO_SERVICE","INFO_CONTROL","INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL")
 level = "INFO"
 
 # 日志格式
@@ -23,3 +23,6 @@ rotation_type = "size"
 # 日志轮转时间间隔 (当rotation_type为time时使用)
 # 可选值: S(秒), M(分), H(小时), D(天), midnight(午夜), W0-W6(周一到周日)
 rotation_interval = "midnight"
+
+# 是否使用绝对路径记录caller_filename (true: 使用绝对路径, false: 仅使用文件名)
+use_absolute_path = false
