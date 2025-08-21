@@ -40,6 +40,7 @@ class SingletonLogger:
     @classmethod
     def _create_logger(cls) -> logging.Logger:
         """创建logger实例"""
+        cls._enhance_logger()
         logger = logging.getLogger(config.logger_name)
         
         # 避免重复添加handler
@@ -66,6 +67,34 @@ class SingletonLogger:
         logger.propagate = False
         
         return logger
+    @classmethod
+    def _enhance_logger(cls) -> None:
+        """增强logger实例"""
+        # 可以添加自定义的logger增强逻辑
+        # 例如，添加额外的handler、设置特定的日志级别等
+        INFO_CONFIG = 11
+        INFO_UTILS = 12
+        INFO_DATABASE = 13
+        INFO_KERNEL = 14
+        INFO_CORE = 15
+        INFO_SERVICE = 16
+        INFO_CONTROL = 17
+        
+        logging.addLevelName(INFO_CONFIG,"INFO_CONFIG")
+        logging.addLevelName(INFO_UTILS,"INFO_UTILS")
+        logging.addLevelName(INFO_DATABASE,"INFO_DATABASE")
+        logging.addLevelName(INFO_KERNEL,"INFO_KERNEL")
+        logging.addLevelName(INFO_CORE,"INFO_CORE")
+        logging.addLevelName(INFO_SERVICE,"INFO_SERVICE")
+        logging.addLevelName(INFO_CONTROL,"INFO_CONTROL")
+        
+        logging.Logger.info_config = lambda self, msg, *args, **kwargs: self._log(INFO_CONFIG, msg, args, **kwargs) if self.isEnabledFor(INFO_CONFIG) else None
+        logging.Logger.info_utils = lambda self, msg, *args, **kwargs: self._log(INFO_UTILS, msg, args, **kwargs) if self.isEnabledFor(INFO_UTILS) else None
+        logging.Logger.info_database = lambda self, msg, *args, **kwargs: self._log(INFO_DATABASE, msg, args, **kwargs) if self.isEnabledFor(INFO_DATABASE) else None
+        logging.Logger.info_kernel = lambda self, msg, *args, **kwargs: self._log(INFO_KERNEL, msg, args, **kwargs) if self.isEnabledFor(INFO_KERNEL) else None
+        logging.Logger.info_core = lambda self, msg, *args, **kwargs: self._log(INFO_CORE, msg, args, **kwargs) if self.isEnabledFor(INFO_CORE) else None
+        logging.Logger.info_service = lambda self, msg, *args, **kwargs: self._log(INFO_SERVICE, msg, args, **kwargs) if self.isEnabledFor(INFO_SERVICE) else None
+        logging.Logger.info_control = lambda self, msg, *args, **kwargs: self._log(INFO_CONTROL, msg, args, **kwargs) if self.isEnabledFor(INFO_CONTROL) else None
     
     @classmethod
     def _create_file_handler(cls, formatter: logging.Formatter) -> Optional[logging.Handler]:
@@ -110,6 +139,7 @@ class SingletonLogger:
         cls._instance = None
         cls._initialized = False
 
+    
 
 def get_logger() -> logging.Logger:
     """获取全局唯一的logger实例
@@ -142,3 +172,4 @@ def reload_logger(config_path:str|Path|None = None) -> None:
         set_logger_config_path(config_path)
     print("logger配置已重新加载")
     return get_logger()
+
