@@ -5,6 +5,7 @@
 import os
 import logging
 import inspect
+from abc import ABC, abstractmethod
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from typing import Optional, Dict, Union
 from pathlib import Path
@@ -88,7 +89,111 @@ class CustomFormatter(logging.Formatter):
         return super().format(record)
 
 
-class SingletonLogger:
+class BaseLogger(ABC):
+    """Logger基类，提取单例和多例的公共功能"""
+    
+    @classmethod
+    def _enhance_logger(cls) -> None:
+        """增强logger实例，注册自定义日志级别"""
+        # 注册自定义日志级别名称
+        logging.addLevelName(11, "INFO_CONFIG")
+        logging.addLevelName(12, "INFO_UTILS")
+        logging.addLevelName(13, "INFO_DATABASE")
+        logging.addLevelName(14, "INFO_KERNEL")
+        logging.addLevelName(15, "INFO_CORE")
+        logging.addLevelName(16, "INFO_SERVICE")
+        logging.addLevelName(17, "INFO_CONTROL")
+    
+    @classmethod
+    def _setup_logger_level(cls, logger: EnhancedLogger) -> None:
+        """设置logger的日志级别"""
+        level_name = config.log_level.upper()
+        # 首先尝试获取标准日志级别
+        level = getattr(logging, level_name, None)
+        if level is None:
+            # 如果不是标准级别，尝试通过级别名称获取自定义级别
+            level_mapping = {
+                'INFO_CONFIG': 11,
+                'INFO_UTILS': 12,
+                'INFO_DATABASE': 13,
+                'INFO_KERNEL': 14,
+                'INFO_CORE': 15,
+                'INFO_SERVICE': 16,
+                'INFO_CONTROL': 17
+            }
+            level = level_mapping.get(level_name, logging.INFO)
+        logger.setLevel(level)
+    
+    @classmethod
+    def _create_console_handler(cls, formatter: logging.Formatter) -> logging.Handler:
+        """创建控制台处理器"""
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        return console_handler
+    
+    @classmethod
+    def _create_file_handler_base(cls, formatter: logging.Formatter, log_file_path: str) -> Optional[logging.Handler]:
+        """创建文件处理器的基础方法"""
+        try:
+            # 确保日志目录存在
+            log_dir = os.path.dirname(log_file_path)
+            if log_dir and not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+            
+            # 根据轮转类型创建不同的处理器
+            if config.rotation_type.lower() == "time":
+                handler = TimedRotatingFileHandler(
+                    filename=log_file_path,
+                    when=config.rotation_interval,
+                    backupCount=config.backup_count,
+                    encoding='utf-8'
+                )
+            else:  # size轮转
+                handler = RotatingFileHandler(
+                    filename=log_file_path,
+                    maxBytes=config.max_bytes,
+                    backupCount=config.backup_count,
+                    encoding='utf-8'
+                )
+            
+            handler.setFormatter(formatter)
+            return handler
+            
+        except Exception as e:
+            print(f"警告: 创建文件处理器失败 {e}，将只使用控制台输出")
+            return None
+    
+    @classmethod
+    def _setup_logger_handlers(cls, logger: EnhancedLogger, formatter: logging.Formatter, log_file_path: str) -> None:
+        """设置logger的处理器"""
+        # 避免重复添加handler
+        if logger.handlers:
+            return
+        
+        # 添加控制台处理器
+        console_handler = cls._create_console_handler(formatter)
+        logger.addHandler(console_handler)
+        
+        # 添加文件处理器
+        file_handler = cls._create_file_handler_base(formatter, log_file_path)
+        if file_handler:
+            logger.addHandler(file_handler)
+        
+        # 防止日志传播到根logger
+        logger.propagate = False
+    
+    @abstractmethod
+    def _create_logger_instance(self, *args, **kwargs) -> EnhancedLogger:
+        """创建logger实例的抽象方法，由子类实现"""
+        pass
+    
+    @abstractmethod
+    def reset(self, *args, **kwargs) -> None:
+        """重置logger实例的抽象方法，由子类实现"""
+        pass
+
+
+class SingletonLogger(BaseLogger):
     """单例Logger类"""
     
     _instance: Optional[EnhancedLogger] = None
@@ -110,88 +215,21 @@ class SingletonLogger:
         # 恢复默认Logger类
         logging.setLoggerClass(logging.Logger)
         
-        # 避免重复添加handler
-        if logger.handlers:
-            return logger
-        
         # 设置日志级别
-        level_name = config.log_level.upper()
-        # 首先尝试获取标准日志级别
-        level = getattr(logging, level_name, None)
-        if level is None:
-            # 如果不是标准级别，尝试通过级别名称获取自定义级别
-            level_mapping = {
-                'INFO_CONFIG': 11,
-                'INFO_UTILS': 12,
-                'INFO_DATABASE': 13,
-                'INFO_KERNEL': 14,
-                'INFO_CORE': 15,
-                'INFO_SERVICE': 16,
-                'INFO_CONTROL': 17
-            }
-            level = level_mapping.get(level_name, logging.INFO)
-        logger.setLevel(level)
+        cls._setup_logger_level(logger)
         
         # 创建格式化器
         formatter = CustomFormatter(config.log_format)
         
-        # 添加控制台处理器
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-        
-        # 添加文件处理器
-        file_handler = cls._create_file_handler(formatter)
-        if file_handler:
-            logger.addHandler(file_handler)
-        
-        # 防止日志传播到根logger
-        logger.propagate = False
+        # 设置处理器
+        cls._setup_logger_handlers(logger, formatter, config.log_file_path)
         
         return logger
-    @classmethod
-    def _enhance_logger(cls) -> None:
-        """增强logger实例，注册自定义日志级别"""
-        # 注册自定义日志级别名称
-        logging.addLevelName(11, "INFO_CONFIG")
-        logging.addLevelName(12, "INFO_UTILS")
-        logging.addLevelName(13, "INFO_DATABASE")
-        logging.addLevelName(14, "INFO_KERNEL")
-        logging.addLevelName(15, "INFO_CORE")
-        logging.addLevelName(16, "INFO_SERVICE")
-        logging.addLevelName(17, "INFO_CONTROL")
     
-    @classmethod
-    def _create_file_handler(cls, formatter: logging.Formatter) -> Optional[logging.Handler]:
-        """创建文件处理器"""
-        try:
-            # 确保日志目录存在
-            log_dir = os.path.dirname(config.log_file_path)
-            if log_dir and not os.path.exists(log_dir):
-                os.makedirs(log_dir, exist_ok=True)
-            
-            # 根据轮转类型创建不同的处理器
-            if config.rotation_type.lower() == "time":
-                handler = TimedRotatingFileHandler(
-                    filename=config.log_file_path,
-                    when=config.rotation_interval,
-                    backupCount=config.backup_count,
-                    encoding='utf-8'
-                )
-            else:  # size轮转
-                handler = RotatingFileHandler(
-                    filename=config.log_file_path,
-                    maxBytes=config.max_bytes,
-                    backupCount=config.backup_count,
-                    encoding='utf-8'
-                )
-            
-            handler.setFormatter(formatter)
-            return handler
-            
-        except Exception as e:
-            print(f"警告: 创建文件处理器失败 {e}，将只使用控制台输出")
-            return None
+    def _create_logger_instance(self, *args, **kwargs) -> EnhancedLogger:
+        """实现抽象方法"""
+        return self._create_logger()
+
     
     @classmethod
     def reset(cls) -> None:
@@ -206,11 +244,16 @@ class SingletonLogger:
 
     
 
-class MultiInstanceLogger:
+class MultiInstanceLogger(BaseLogger):
     """多例Logger管理类"""
     
     _instances: Dict[str, EnhancedLogger] = {}
     _initialized_instances: Dict[str, bool] = {}
+    
+    @classmethod
+    def get_logger(cls, instance_name: str) -> EnhancedLogger:
+        """获取指定名称的logger实例（兼容方法名）"""
+        return cls.get_instance(instance_name)
     
     @classmethod
     def get_instance(cls, instance_name: str) -> EnhancedLogger:
@@ -237,45 +280,38 @@ class MultiInstanceLogger:
         # 恢复默认Logger类
         logging.setLoggerClass(logging.Logger)
         
-        # 避免重复添加handler
-        if logger.handlers:
-            return logger
-        
         # 设置日志级别
-        level_name = config.log_level.upper()
-        # 首先尝试获取标准日志级别
-        level = getattr(logging, level_name, None)
-        if level is None:
-            # 如果不是标准级别，尝试通过级别名称获取自定义级别
-            level_mapping = {
-                'INFO_CONFIG': 11,
-                'INFO_UTILS': 12,
-                'INFO_DATABASE': 13,
-                'INFO_KERNEL': 14,
-                'INFO_CORE': 15,
-                'INFO_SERVICE': 16,
-                'INFO_CONTROL': 17
-            }
-            level = level_mapping.get(level_name, logging.INFO)
-        logger.setLevel(level)
+        cls._setup_logger_level(logger)
         
         # 创建格式化器
         formatter = CustomFormatter(config.log_format)
         
-        # 添加控制台处理器
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+        # 根据配置决定日志文件路径
+        if config.multi_instance_shared_log:
+            # 共享同一个日志文件
+            log_file_path = config.log_file_path
+        else:
+            # 为每个实例创建独立的日志文件
+            base_path = Path(config.log_file_path)
+            log_file_path = str(base_path.parent / f"{base_path.stem}_{instance_name}{base_path.suffix}")
         
-        # 添加文件处理器（为每个实例创建独立的日志文件）
-        file_handler = cls._create_file_handler(formatter, instance_name)
-        if file_handler:
-            logger.addHandler(file_handler)
-        
-        # 防止日志传播到根logger
-        logger.propagate = False
+        # 设置处理器
+        cls._setup_logger_handlers(logger, formatter, log_file_path)
         
         return logger
+    
+    def _create_logger_instance(self, instance_name: str) -> EnhancedLogger:
+        """实现抽象方法"""
+        return self._create_logger(instance_name)
+    
+    def reset(self) -> None:
+        """重置所有logger实例"""
+        for logger in self._loggers.values():
+            # 移除所有处理器
+            for handler in logger.handlers[:]:
+                logger.removeHandler(handler)
+                handler.close()
+        self._loggers.clear()
     
     @classmethod
     def _enhance_logger(cls) -> None:
@@ -289,41 +325,7 @@ class MultiInstanceLogger:
         logging.addLevelName(16, "INFO_SERVICE")
         logging.addLevelName(17, "INFO_CONTROL")
     
-    @classmethod
-    def _create_file_handler(cls, formatter: logging.Formatter, instance_name: str) -> Optional[logging.Handler]:
-        """为指定实例创建文件处理器"""
-        try:
-            # 为每个实例创建独立的日志文件
-            base_path = Path(config.log_file_path)
-            instance_log_path = base_path.parent / f"{base_path.stem}_{instance_name}{base_path.suffix}"
-            
-            # 确保日志目录存在
-            log_dir = instance_log_path.parent
-            if not log_dir.exists():
-                log_dir.mkdir(parents=True, exist_ok=True)
-            
-            # 根据轮转类型创建不同的处理器
-            if config.rotation_type.lower() == "time":
-                handler = TimedRotatingFileHandler(
-                    filename=str(instance_log_path),
-                    when=config.rotation_interval,
-                    backupCount=config.backup_count,
-                    encoding='utf-8'
-                )
-            else:  # size轮转
-                handler = RotatingFileHandler(
-                    filename=str(instance_log_path),
-                    maxBytes=config.max_bytes,
-                    backupCount=config.backup_count,
-                    encoding='utf-8'
-                )
-            
-            handler.setFormatter(formatter)
-            return handler
-            
-        except Exception as e:
-            print(f"警告: 为实例 {instance_name} 创建文件处理器失败 {e}，将只使用控制台输出")
-            return None
+
     
     @classmethod
     def get_instances(cls) -> Dict[str, EnhancedLogger]:

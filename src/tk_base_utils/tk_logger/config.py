@@ -26,7 +26,8 @@ class TkLoggerConfig:
                 "backup_count": 5,
                 "rotation_type": "size",  # size 或 time
                 "rotation_interval": "midnight",
-                "use_absolute_path": False  # 是否使用绝对路径记录caller_filename
+                "use_absolute_path": False,  # 是否使用绝对路径记录caller_filename
+                "multi_instance_shared_log": False  # 多例logger是否共享同一个日志文件
             }
         }
         
@@ -103,6 +104,11 @@ class TkLoggerConfig:
     def use_absolute_path(self) -> bool:
         """获取是否使用绝对路径记录caller_filename"""
         return self.logging_config.get("use_absolute_path", False)
+    
+    @property
+    def multi_instance_shared_log(self) -> bool:
+        """获取多例logger是否共享同一个日志文件"""
+        return self.logging_config.get("multi_instance_shared_log", False)
 
 
 # 全局配置实例
