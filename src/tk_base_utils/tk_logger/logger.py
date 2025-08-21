@@ -48,7 +48,22 @@ class SingletonLogger:
             return logger
         
         # 设置日志级别
-        logger.setLevel(getattr(logging, config.log_level.upper(), logging.INFO))
+        level_name = config.log_level.upper()
+        # 首先尝试获取标准日志级别
+        level = getattr(logging, level_name, None)
+        if level is None:
+            # 如果不是标准级别，尝试通过级别名称获取自定义级别
+            level_mapping = {
+                'INFO_CONFIG': 11,
+                'INFO_UTILS': 12,
+                'INFO_DATABASE': 13,
+                'INFO_KERNEL': 14,
+                'INFO_CORE': 15,
+                'INFO_SERVICE': 16,
+                'INFO_CONTROL': 17
+            }
+            level = level_mapping.get(level_name, logging.INFO)
+        logger.setLevel(level)
         
         # 创建格式化器
         formatter = CustomFormatter(config.log_format)

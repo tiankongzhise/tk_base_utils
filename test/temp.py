@@ -1,5 +1,9 @@
-from src.tk_base_utils.tk_logger import get_logger,set_logger_config_path
-from src.tk_base_utils import find_file
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from tk_base_utils.tk_logger import get_logger,set_logger_config_path
+from tk_base_utils import find_file
 
 if __name__ == "__main__":
     log_config_path = find_file('test_log_config.toml')
