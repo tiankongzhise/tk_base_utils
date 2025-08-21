@@ -56,7 +56,10 @@ class CustomFormatter(logging.Formatter):
     def format(self, record):
         # 如果记录中没有caller_filename和caller_lineno，使用默认值
         if not hasattr(record, 'caller_filename'):
-            record.caller_filename = os.path.basename(record.pathname)
+            if config.use_absolute_path:
+                record.caller_filename = record.pathname
+            else:
+                record.caller_filename = os.path.basename(record.pathname)
         if not hasattr(record, 'caller_lineno'):
             record.caller_lineno = record.lineno
         

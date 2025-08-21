@@ -40,12 +40,17 @@ def logger_wrapper_old(model: str = "simple") -> Callable:
             try:
                 # 获取调用栈，找到调用被装饰函数的位置
                 caller_frame = frame.f_back  # wrapper的调用者
-                caller_filename = caller_frame.f_code.co_filename
+                caller_filename_full = caller_frame.f_code.co_filename
                 caller_lineno = caller_frame.f_lineno
                 
                 # 提取文件名（不包含路径）
                 import os
-                caller_filename_only = os.path.basename(caller_filename)
+                caller_filename_only = os.path.basename(caller_filename_full)
+                
+                # 根据配置选择使用绝对路径或相对路径
+                from .config import get_logger_config
+                config = get_logger_config()
+                caller_filename = caller_filename_full if config.use_absolute_path else caller_filename_only
             finally:
                 del frame  # 避免循环引用
             
@@ -92,7 +97,7 @@ def logger_wrapper_old(model: str = "simple") -> Callable:
             
             # 创建extra字典，包含真实的文件名和行号
             extra_info = {
-                'caller_filename': caller_filename_only,
+                'caller_filename': caller_filename,
                 'caller_lineno': caller_lineno
             }
             
@@ -257,7 +262,7 @@ def logger_wrapper(level:LEVEL_LITERAL = "INFO",model: MODEL_LITERAL = "default"
             
             # 创建extra字典，包含真实的文件名和行号
             extra_info = {
-                'caller_filename': caller_filename_only,
+                'caller_filename': caller_filename,
                 'caller_lineno': caller_lineno
             }
             
@@ -336,7 +341,10 @@ def logger_wrapper(level:LEVEL_LITERAL = "INFO",model: MODEL_LITERAL = "default"
                     f"开始时间: {start_time_str}, "
                     f"结束时间: {end_time_str}, "
                     f"执行时间: {execution_time:.4f}秒",
-                    extra=extra_info
+                    extra={
+                        'caller_filename': caller_filename,
+                        'caller_lineno': caller_lineno
+                    }
                 )
             
                 # 重新抛出异常
