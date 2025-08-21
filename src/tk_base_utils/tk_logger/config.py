@@ -25,7 +25,8 @@ class TkLoggerConfig:
                 "max_bytes": 10485760,  # 10MB
                 "backup_count": 5,
                 "rotation_type": "size",  # size 或 time
-                "rotation_interval": "midnight"
+                "rotation_interval": "midnight",
+                "use_absolute_path": False  # 是否使用绝对路径记录caller_filename
             }
         }
         
@@ -97,6 +98,11 @@ class TkLoggerConfig:
     def rotation_interval(self) -> str:
         """获取轮转时间间隔"""
         return self.logging_config.get("rotation_interval", "midnight")
+    
+    @property
+    def use_absolute_path(self) -> bool:
+        """获取是否使用绝对路径记录caller_filename"""
+        return self.logging_config.get("use_absolute_path", False)
 
 
 # 全局配置实例

@@ -4,6 +4,7 @@
 
 import os
 import logging
+import inspect
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from typing import Optional
 from pathlib import Path
@@ -14,40 +15,61 @@ from .config import config,set_logger_config_path
 class EnhancedLogger(logging.Logger):
     """增强的Logger类，提供自定义日志级别方法和IDE代码提示支持"""
     
+    def _log_with_caller_info(self, level, msg, *args, **kwargs):
+        """带调用者信息的日志记录方法"""
+        if self.isEnabledFor(level):
+            # 获取调用者信息
+            frame = inspect.currentframe()
+            try:
+                # 跳过当前方法和调用的自定义日志方法，找到真正的调用者
+                caller_frame = frame.f_back.f_back
+                caller_filename_full = caller_frame.f_code.co_filename
+                caller_lineno = caller_frame.f_lineno
+                
+                # 根据配置选择使用绝对路径或相对路径
+                if config.use_absolute_path:
+                    caller_filename = caller_filename_full
+                else:
+                    caller_filename = os.path.basename(caller_filename_full)
+                
+                # 添加调用者信息到extra中
+                if 'extra' not in kwargs:
+                    kwargs['extra'] = {}
+                kwargs['extra']['caller_filename'] = caller_filename
+                kwargs['extra']['caller_lineno'] = caller_lineno
+                
+            finally:
+                del frame
+            
+            self._log(level, msg, args, **kwargs)
+    
     def info_config(self, msg, *args, **kwargs):
         """记录INFO_CONFIG级别的日志"""
-        if self.isEnabledFor(11):
-            self._log(11, msg, args, **kwargs)
+        self._log_with_caller_info(11, msg, *args, **kwargs)
     
     def info_utils(self, msg, *args, **kwargs):
         """记录INFO_UTILS级别的日志"""
-        if self.isEnabledFor(12):
-            self._log(12, msg, args, **kwargs)
+        self._log_with_caller_info(12, msg, *args, **kwargs)
     
     def info_database(self, msg, *args, **kwargs):
         """记录INFO_DATABASE级别的日志"""
-        if self.isEnabledFor(13):
-            self._log(13, msg, args, **kwargs)
+        self._log_with_caller_info(13, msg, *args, **kwargs)
     
     def info_kernel(self, msg, *args, **kwargs):
         """记录INFO_KERNEL级别的日志"""
-        if self.isEnabledFor(14):
-            self._log(14, msg, args, **kwargs)
+        self._log_with_caller_info(14, msg, *args, **kwargs)
     
     def info_core(self, msg, *args, **kwargs):
         """记录INFO_CORE级别的日志"""
-        if self.isEnabledFor(15):
-            self._log(15, msg, args, **kwargs)
+        self._log_with_caller_info(15, msg, *args, **kwargs)
     
     def info_service(self, msg, *args, **kwargs):
         """记录INFO_SERVICE级别的日志"""
-        if self.isEnabledFor(16):
-            self._log(16, msg, args, **kwargs)
+        self._log_with_caller_info(16, msg, *args, **kwargs)
     
     def info_control(self, msg, *args, **kwargs):
         """记录INFO_CONTROL级别的日志"""
-        if self.isEnabledFor(17):
-            self._log(17, msg, args, **kwargs)
+        self._log_with_caller_info(17, msg, *args, **kwargs)
 
 
 class CustomFormatter(logging.Formatter):
@@ -56,7 +78,10 @@ class CustomFormatter(logging.Formatter):
     def format(self, record):
         # 如果记录中没有caller_filename和caller_lineno，使用默认值
         if not hasattr(record, 'caller_filename'):
-            record.caller_filename = os.path.basename(record.pathname)
+            if config.use_absolute_path:
+                record.caller_filename = record.pathname
+            else:
+                record.caller_filename = os.path.basename(record.pathname)
         if not hasattr(record, 'caller_lineno'):
             record.caller_lineno = record.lineno
         
