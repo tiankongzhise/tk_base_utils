@@ -1,7 +1,6 @@
 """核心日志模块
 
-提供全局唯一的logger实例和日志配置功能。
-"""
+提供全局唯一的logger实例和日志配置功能。"""
 
 import os
 import logging
@@ -10,6 +9,45 @@ from typing import Optional
 from pathlib import Path
 
 from .config import config,set_logger_config_path
+
+
+class EnhancedLogger(logging.Logger):
+    """增强的Logger类，提供自定义日志级别方法和IDE代码提示支持"""
+    
+    def info_config(self, msg, *args, **kwargs):
+        """记录INFO_CONFIG级别的日志"""
+        if self.isEnabledFor(11):
+            self._log(11, msg, args, **kwargs)
+    
+    def info_utils(self, msg, *args, **kwargs):
+        """记录INFO_UTILS级别的日志"""
+        if self.isEnabledFor(12):
+            self._log(12, msg, args, **kwargs)
+    
+    def info_database(self, msg, *args, **kwargs):
+        """记录INFO_DATABASE级别的日志"""
+        if self.isEnabledFor(13):
+            self._log(13, msg, args, **kwargs)
+    
+    def info_kernel(self, msg, *args, **kwargs):
+        """记录INFO_KERNEL级别的日志"""
+        if self.isEnabledFor(14):
+            self._log(14, msg, args, **kwargs)
+    
+    def info_core(self, msg, *args, **kwargs):
+        """记录INFO_CORE级别的日志"""
+        if self.isEnabledFor(15):
+            self._log(15, msg, args, **kwargs)
+    
+    def info_service(self, msg, *args, **kwargs):
+        """记录INFO_SERVICE级别的日志"""
+        if self.isEnabledFor(16):
+            self._log(16, msg, args, **kwargs)
+    
+    def info_control(self, msg, *args, **kwargs):
+        """记录INFO_CONTROL级别的日志"""
+        if self.isEnabledFor(17):
+            self._log(17, msg, args, **kwargs)
 
 
 class CustomFormatter(logging.Formatter):
@@ -28,20 +66,24 @@ class CustomFormatter(logging.Formatter):
 class SingletonLogger:
     """单例Logger类"""
     
-    _instance: Optional[logging.Logger] = None
+    _instance: Optional[EnhancedLogger] = None
     _initialized: bool = False
     
-    def __new__(cls) -> logging.Logger:
+    def __new__(cls) -> EnhancedLogger:
         if cls._instance is None:
             cls._instance = cls._create_logger()
             cls._initialized = True
         return cls._instance
     
     @classmethod
-    def _create_logger(cls) -> logging.Logger:
+    def _create_logger(cls) -> EnhancedLogger:
         """创建logger实例"""
         cls._enhance_logger()
+        # 设置自定义Logger类
+        logging.setLoggerClass(EnhancedLogger)
         logger = logging.getLogger(config.logger_name)
+        # 恢复默认Logger类
+        logging.setLoggerClass(logging.Logger)
         
         # 避免重复添加handler
         if logger.handlers:
@@ -84,32 +126,15 @@ class SingletonLogger:
         return logger
     @classmethod
     def _enhance_logger(cls) -> None:
-        """增强logger实例"""
-        # 可以添加自定义的logger增强逻辑
-        # 例如，添加额外的handler、设置特定的日志级别等
-        INFO_CONFIG = 11
-        INFO_UTILS = 12
-        INFO_DATABASE = 13
-        INFO_KERNEL = 14
-        INFO_CORE = 15
-        INFO_SERVICE = 16
-        INFO_CONTROL = 17
-        
-        logging.addLevelName(INFO_CONFIG,"INFO_CONFIG")
-        logging.addLevelName(INFO_UTILS,"INFO_UTILS")
-        logging.addLevelName(INFO_DATABASE,"INFO_DATABASE")
-        logging.addLevelName(INFO_KERNEL,"INFO_KERNEL")
-        logging.addLevelName(INFO_CORE,"INFO_CORE")
-        logging.addLevelName(INFO_SERVICE,"INFO_SERVICE")
-        logging.addLevelName(INFO_CONTROL,"INFO_CONTROL")
-        
-        logging.Logger.info_config = lambda self, msg, *args, **kwargs: self._log(INFO_CONFIG, msg, args, **kwargs) if self.isEnabledFor(INFO_CONFIG) else None
-        logging.Logger.info_utils = lambda self, msg, *args, **kwargs: self._log(INFO_UTILS, msg, args, **kwargs) if self.isEnabledFor(INFO_UTILS) else None
-        logging.Logger.info_database = lambda self, msg, *args, **kwargs: self._log(INFO_DATABASE, msg, args, **kwargs) if self.isEnabledFor(INFO_DATABASE) else None
-        logging.Logger.info_kernel = lambda self, msg, *args, **kwargs: self._log(INFO_KERNEL, msg, args, **kwargs) if self.isEnabledFor(INFO_KERNEL) else None
-        logging.Logger.info_core = lambda self, msg, *args, **kwargs: self._log(INFO_CORE, msg, args, **kwargs) if self.isEnabledFor(INFO_CORE) else None
-        logging.Logger.info_service = lambda self, msg, *args, **kwargs: self._log(INFO_SERVICE, msg, args, **kwargs) if self.isEnabledFor(INFO_SERVICE) else None
-        logging.Logger.info_control = lambda self, msg, *args, **kwargs: self._log(INFO_CONTROL, msg, args, **kwargs) if self.isEnabledFor(INFO_CONTROL) else None
+        """增强logger实例，注册自定义日志级别"""
+        # 注册自定义日志级别名称
+        logging.addLevelName(11, "INFO_CONFIG")
+        logging.addLevelName(12, "INFO_UTILS")
+        logging.addLevelName(13, "INFO_DATABASE")
+        logging.addLevelName(14, "INFO_KERNEL")
+        logging.addLevelName(15, "INFO_CORE")
+        logging.addLevelName(16, "INFO_SERVICE")
+        logging.addLevelName(17, "INFO_CONTROL")
     
     @classmethod
     def _create_file_handler(cls, formatter: logging.Formatter) -> Optional[logging.Handler]:
@@ -156,15 +181,16 @@ class SingletonLogger:
 
     
 
-def get_logger() -> logging.Logger:
+def get_logger() -> EnhancedLogger:
     """获取全局唯一的logger实例
     
     Returns:
-        logging.Logger: 配置好的logger实例
+        EnhancedLogger: 配置好的增强logger实例，支持自定义日志级别方法
     
     Example:
         >>> logger = get_logger()
         >>> logger.info("这是一条信息日志")
+        >>> logger.info_utils("这是一条工具级别的日志")
         >>> logger.error("这是一条错误日志")
     """
     return SingletonLogger()
