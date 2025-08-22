@@ -136,8 +136,15 @@ def logger_wrapper_multi(logger: EnhancedLogger, level: LEVEL_LITERAL = "INFO", 
                     param_info.append(f"{param_name}={repr(param_value)}")
             
             # 创建extra字典，包含真实的文件名和行号
+            # 根据配置选择使用绝对路径或文件名
+            from .config import config
+            if config.use_absolute_path:
+                final_caller_filename = caller_filename
+            else:
+                final_caller_filename = caller_filename_only
+            
             extra_info = {
-                'caller_filename': caller_filename,
+                'caller_filename': final_caller_filename,
                 'caller_lineno': caller_lineno
             }
             
