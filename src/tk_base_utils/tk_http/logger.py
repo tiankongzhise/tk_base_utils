@@ -8,6 +8,7 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 from .config import ClientConfig
 from ..tk_logger import get_logger
+from ..tk_logger.levels import get_log_level
 
 
 class HttpLogger:
@@ -131,20 +132,8 @@ class HttpLogger:
         """设置日志级别"""
         level_name = self.config.log_level.upper()
         
-        # 首先尝试获取标准日志级别
-        level = getattr(logging, level_name, None)
-        if level is None:
-            # 如果不是标准级别，尝试获取自定义级别
-            level_mapping = {
-                'INFO_CONFIG': 11,
-                'INFO_UTILS': 12,
-                'INFO_DATABASE': 13,
-                'INFO_KERNEL': 14,
-                'INFO_CORE': 15,
-                'INFO_SERVICE': 16,
-                'INFO_CONTROL': 17
-            }
-            level = level_mapping.get(level_name, logging.INFO)
+        # 使用统一的日志等级管理模块获取等级数值
+        level = get_log_level(level_name, logging.INFO)
         
         self.logger.setLevel(level)
     
