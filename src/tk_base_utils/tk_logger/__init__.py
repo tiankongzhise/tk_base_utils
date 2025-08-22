@@ -12,7 +12,7 @@ from .levels import (
     CUSTOM_LOG_LEVELS, ALL_LOG_LEVELS
 )
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 __all__ = ["get_logger", 
            "reload_logger",
            "reset_logger", 
