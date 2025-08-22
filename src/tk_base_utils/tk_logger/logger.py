@@ -392,21 +392,72 @@ def get_logger(mode: str = "singleton", instance_name: str = "default") -> Enhan
         return SingletonLogger()
 
 
-def reset_logger() -> None:
+def reset_logger(instance_name: str = None) -> None:
     """重置logger实例
+    
+    Args:
+        instance_name: logger实例名称
+                      - None: 重置单例logger（默认行为）
+                      - "ALL": 重置单例和所有多例实例
+                      - 其他字符串: 重置指定名称的多例实例
     
     主要用于测试或需要重新加载配置的场景。
     """
-    SingletonLogger.reset()
+    if instance_name is None:
+        # 默认重置单例
+        SingletonLogger.reset()
+    elif instance_name.upper() == "ALL":
+        # 重置所有实例
+        SingletonLogger.reset()
+        MultiInstanceLogger.reset()
+    else:
+        # 重置指定的多例实例
+        if instance_name in MultiInstanceLogger._instances:
+            MultiInstanceLogger.reset(instance_name)
+        else:
+            # 实例不存在，输出警告
+            temp_logger = logging.getLogger("temp_warning")
+            temp_logger.warning(f"Logger实例 '{instance_name}' 不存在，无法重置")
 
-def reload_logger(config_path:str|Path|None = None) -> None:
+def reload_logger(config_path: str|Path|None = None, instance_name: str = None) -> Optional[EnhancedLogger]:
     """重新加载logger配置
+    
+    Args:
+        config_path: 新的配置文件路径，如果为None则使用当前配置
+        instance_name: logger实例名称
+                      - None: 重载单例logger（默认行为）
+                      - "ALL": 重载单例和所有多例实例
+                      - 其他字符串: 重载指定名称的多例实例
+    
+    Returns:
+        EnhancedLogger: 重载后的logger实例，如果实例不存在则返回None
     
     主要用于在运行时动态改变日志配置。
     """
-    SingletonLogger.reset()
+    # 更新配置文件路径
     if config_path:
         set_logger_config_path(config_path)
-    print("logger配置已重新加载")
-    return get_logger()
+    
+    if instance_name is None:
+        # 默认重载单例
+        SingletonLogger.reset()
+        print("单例logger配置已重新加载")
+        return get_logger()
+    elif instance_name.upper() == "ALL":
+        # 重载所有实例
+        SingletonLogger.reset()
+        MultiInstanceLogger.reset()
+        print("所有logger实例配置已重新加载")
+        return get_logger()
+    else:
+        # 重载指定的多例实例
+        if instance_name in MultiInstanceLogger._instances:
+            MultiInstanceLogger.reset(instance_name)
+            print(f"Logger实例 '{instance_name}' 配置已重新加载")
+            return get_logger("multi", instance_name)
+        else:
+            # 实例不存在，输出警告并返回None
+            temp_logger = logging.getLogger("temp_warning")
+            temp_logger.warning(f"Logger实例 '{instance_name}' 不存在，无法重载")
+            return None
 
