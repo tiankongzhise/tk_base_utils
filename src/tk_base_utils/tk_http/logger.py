@@ -1,11 +1,14 @@
 """HTTP客户端日志管理"""
 
-import logging
 import time
+import logging
 import os
 from logging.handlers import RotatingFileHandler
 from typing import Dict, Any, Optional
+from pathlib import Path
 from .config import ClientConfig
+from ..tk_logger import get_logger
+from ..tk_logger.levels import get_log_level
 
 
 class HttpLogger:
@@ -13,62 +16,13 @@ class HttpLogger:
     
     def __init__(self, config: ClientConfig):
         self.config = config
-        self.logger = self._setup_logger()
-    
-    def _setup_logger(self) -> logging.Logger:
-        """设置日志记录器"""
-        # 使用唯一的logger名称避免冲突
-        logger_name = f"http_client_{id(self)}"
-        logger = logging.getLogger(logger_name)
-        logger.setLevel(getattr(logging, self.config.log_level.upper()))
+        # 使用tk_logger的多例功能创建logger实例
+        # 使用唯一的实例名称避免冲突
+        instance_name = f"http_client_{id(self)}"
+        self.logger = get_logger("multi", instance_name)
         
-        # 清除现有handlers
-        logger.handlers.clear()
-        
-        # 控制台handler
-        console_handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-        
-        # 文件handler（如果配置了日志文件路径）
-        if self.config.log_file_path:
-            self._add_file_handler(logger, formatter)
-        
-        return logger
-    
-    def _add_file_handler(self, logger: logging.Logger, formatter: logging.Formatter) -> None:
-        """添加文件日志处理器"""
-        try:
-            # 确保日志目录存在
-            log_dir = os.path.dirname(self.config.log_file_path)
-            if log_dir and not os.path.exists(log_dir):
-                os.makedirs(log_dir, exist_ok=True)
-            
-            # 根据配置决定使用哪种文件处理器
-            if self.config.log_file_rotation_enabled:
-                # 使用RotatingFileHandler进行日志轮转
-                file_handler = RotatingFileHandler(
-                    filename=self.config.log_file_path,
-                    maxBytes=self.config.log_file_max_size,
-                    backupCount=self.config.log_file_backup_count,
-                    encoding='utf-8'
-                )
-            else:
-                # 使用普通FileHandler，不进行轮转（适用于共享日志文件的场景）
-                file_handler = logging.FileHandler(
-                    filename=self.config.log_file_path,
-                    encoding='utf-8'
-                )
-            
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
-            
-        except Exception as e:
-            # 如果文件handler创建失败，记录警告但不影响程序运行
-            logger.warning(f"Failed to create file handler for {self.config.log_file_path}: {e}")
+        # 应用ClientConfig中的个性化日志设置
+        self._apply_config_settings()
     
     def log_request(self, method: str, url: str, headers: Optional[Dict[str, str]] = None, 
                    data: Any = None) -> None:
@@ -88,11 +42,11 @@ class HttpLogger:
             safe_headers = self._filter_sensitive_headers(headers)
             log_data["headers"] = safe_headers
         
-        if data and self.logger.isEnabledFor(logging.DEBUG):
+        if data:
             log_data["data"] = str(data)[:500]  # 限制数据长度
         
-        self.logger.info(f"Request: {method} {url}")
-        self.logger.debug(f"Request details: {log_data}")
+        self.logger.info_utils(f"Request: {method} {url}")
+        self.logger.info_utils(f"Request details: {log_data}")
     
     def log_response(self, status_code: int, url: str, elapsed: float, 
                     headers: Optional[Dict[str, str]] = None, 
@@ -116,9 +70,11 @@ class HttpLogger:
         if content_length is not None:
             log_data["content_length"] = content_length
         
-        level = logging.INFO if 200 <= status_code < 400 else logging.WARNING
-        self.logger.log(level, f"Response: {status_code} {url} ({elapsed:.3f}s)")
-        self.logger.debug(f"Response details: {log_data}")
+        if 200 <= status_code < 400:
+            self.logger.info_utils(f"Response: {status_code} {url} ({elapsed:.3f}s)")
+        else:
+            self.logger.warning(f"Response: {status_code} {url} ({elapsed:.3f}s)")
+        self.logger.info_utils(f"Response details: {log_data}")
     
     def log_retry(self, attempt: int, max_retries: int, delay: float, 
                  error: Exception, url: str) -> None:
@@ -161,3 +117,100 @@ class HttpLogger:
                 filtered[key] = value
         
         return filtered
+    
+    def _apply_config_settings(self) -> None:
+        """应用ClientConfig中的个性化日志设置"""
+        # 设置日志级别
+        self._set_log_level()
+        
+        # 只有当配置了日志文件路径时，才应用个性化的文件处理器设置
+        # log_file_path为None表示使用共享日志，不应用个性化的文件大小和轮转设置
+        if self.config.log_file_path:
+            self._add_file_handler()
+    
+    def _set_log_level(self) -> None:
+        """设置日志级别"""
+        level_name = self.config.log_level.upper()
+        
+        # 使用统一的日志等级管理模块获取等级数值
+        level = get_log_level(level_name, logging.INFO)
+        
+        self.logger.setLevel(level)
+    
+    def _add_file_handler(self) -> None:
+        """添加个性化文件处理器
+        
+        注意：此方法只在log_file_path不为None时调用，用于创建个性化的文件处理器。
+        当log_file_path为None时，表示使用共享日志，不会调用此方法，
+        个性化的log_file_max_size、log_file_backup_count、log_file_rotation_enabled设置不会生效。
+        """
+        try:
+            # 确保日志目录存在
+            log_dir = os.path.dirname(self.config.log_file_path)
+            if log_dir and not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+            
+            # 检查是否已经有指向相同文件的处理器
+            target_file_handler = None
+            for handler in self.logger.handlers:
+                if isinstance(handler, (logging.FileHandler, RotatingFileHandler)):
+                    handler_file = getattr(handler, 'baseFilename', None)
+                    if handler_file and os.path.abspath(handler_file) == os.path.abspath(self.config.log_file_path):
+                        target_file_handler = handler
+                        break
+            
+            if target_file_handler is None:
+                # 没有找到指向目标文件的处理器，创建新的个性化处理器
+                if self.config.log_file_rotation_enabled:
+                    # 使用个性化配置的RotatingFileHandler
+                    file_handler = RotatingFileHandler(
+                        filename=self.config.log_file_path,
+                        maxBytes=self.config.log_file_max_size,
+                        backupCount=self.config.log_file_backup_count,
+                        encoding='utf-8'
+                    )
+                else:
+                    # 使用普通FileHandler，不进行轮转
+                    file_handler = logging.FileHandler(
+                        filename=self.config.log_file_path,
+                        encoding='utf-8'
+                    )
+                
+                # 设置格式化器
+                formatter = logging.Formatter(
+                    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                )
+                file_handler.setFormatter(formatter)
+                self.logger.addHandler(file_handler)
+            else:
+                # 找到了指向目标文件的处理器，检查是否需要更新配置
+                if isinstance(target_file_handler, RotatingFileHandler):
+                    # 如果现有的是RotatingFileHandler，检查个性化配置是否匹配
+                    if (target_file_handler.maxBytes != self.config.log_file_max_size or 
+                        target_file_handler.backupCount != self.config.log_file_backup_count):
+                        # 个性化配置不匹配，移除旧的处理器，添加新的
+                        self.logger.removeHandler(target_file_handler)
+                        target_file_handler.close()
+                        
+                        if self.config.log_file_rotation_enabled:
+                            new_handler = RotatingFileHandler(
+                                filename=self.config.log_file_path,
+                                maxBytes=self.config.log_file_max_size,
+                                backupCount=self.config.log_file_backup_count,
+                                encoding='utf-8'
+                            )
+                        else:
+                            new_handler = logging.FileHandler(
+                                filename=self.config.log_file_path,
+                                encoding='utf-8'
+                            )
+                        
+                        formatter = logging.Formatter(
+                            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                        )
+                        new_handler.setFormatter(formatter)
+                        self.logger.addHandler(new_handler)
+                
+        except Exception as e:
+            # 如果个性化文件handler创建失败，记录警告但不影响程序运行
+            self.logger.warning(f"Failed to create personalized file handler for {self.config.log_file_path}: {e}")

@@ -23,5 +23,6 @@ __all__ = [
     "get_abs_path",
     "create_file_name_with_time",
     "set_tk_config_path",
-    "tk_logger"
+    "tk_logger",
+    "tk_http"
 ]
