@@ -56,6 +56,55 @@ def logger_wrapper(level:LEVEL_LITERAL = "INFO",model: MODEL_LITERAL = "default"
     return decorator
 
 
+def create_logger_wrapper(logger: EnhancedLogger) -> Callable:
+    """创建一个使用指定logger实例的logger_wrapper装饰器
+    
+    该函数返回一个与logger_wrapper功能完全一致的装饰器，但使用传入的logger实例
+    而不是单例logger实例。
+    
+    Args:
+        logger: 指定的logger实例
+    
+    Returns:
+        一个装饰器工厂函数，接受level和model参数，返回装饰器
+    
+    Example:
+        >>> # 创建自定义logger实例
+        >>> custom_logger = get_logger("multi", "custom_instance")
+        >>> 
+        >>> # 创建使用该logger的装饰器
+        >>> my_logger_wrapper = create_logger_wrapper(custom_logger)
+        >>> 
+        >>> # 使用装饰器
+        >>> @my_logger_wrapper()
+        ... def add(a, b):
+        ...     return a + b
+        >>> 
+        >>> @my_logger_wrapper(level='DEBUG', model='simple')
+        ... def multiply(x, y):
+        ...     return x * y
+    """
+    def logger_wrapper_factory(level: LEVEL_LITERAL = "INFO", model: MODEL_LITERAL = "default") -> Callable:
+        """装饰器工厂函数
+        
+        Args:
+            level: 日志级别，支持 'INFO_CONFIG','INFO_UTILS','INFO_DATABASE','INFO_KERNEL','INFO_CORE','INFO_SERVICE','INFO_CONTROL','INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL'，默认为 'INFO'
+            model: 日志模型，支持 'simple' 和 'default'，默认为 'default'
+        
+        Returns:
+            装饰器函数
+        """
+        def decorator(func: Callable) -> Callable:
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                # 使用logger_wrapper_multi的核心逻辑，但使用传入的logger实例
+                return logger_wrapper_multi(logger, level, model)(func)(*args, **kwargs)
+            return wrapper
+        return decorator
+    
+    return logger_wrapper_factory
+
+
 def logger_wrapper_multi(logger: EnhancedLogger, level: LEVEL_LITERAL = "INFO", model: MODEL_LITERAL = "default") -> Callable:
     """多例版本的日志装饰器，支持指定logger实例
     
@@ -90,6 +139,15 @@ def logger_wrapper_multi(logger: EnhancedLogger, level: LEVEL_LITERAL = "INFO", 
             try:
                 # 获取调用栈，找到调用被装饰函数的位置
                 caller_frame = frame.f_back  # wrapper的调用者
+                
+                # 检查是否通过logger_wrapper间接调用
+                # 如果caller_frame指向decorators.py中的logger_wrapper，需要再向上一层
+                if (caller_frame and 
+                    caller_frame.f_code.co_filename.endswith('decorators.py') and 
+                    caller_frame.f_code.co_name == 'wrapper'):
+                    # 这是通过logger_wrapper间接调用的情况，需要再向上一层
+                    caller_frame = caller_frame.f_back
+                
                 caller_filename = caller_frame.f_code.co_filename
                 caller_lineno = caller_frame.f_lineno
                 
@@ -243,3 +301,5 @@ def logger_wrapper_multi(logger: EnhancedLogger, level: LEVEL_LITERAL = "INFO", 
         
         return wrapper
     return decorator
+
+

@@ -4,7 +4,7 @@
 """
 
 from .logger import get_logger, reload_logger, reset_logger, MultiInstanceLogger
-from .decorators import logger_wrapper, logger_wrapper_multi
+from .decorators import logger_wrapper, logger_wrapper_multi, create_logger_wrapper
 from .config import set_logger_config_path, get_logger_config
 from .levels import (
     get_log_level, get_level_name, register_custom_levels,
@@ -19,6 +19,7 @@ __all__ = ["get_logger",
            "MultiInstanceLogger",
            "logger_wrapper", 
            "logger_wrapper_multi",
+           "create_logger_wrapper",
            "set_logger_config_path",
            "get_logger_config",
            # 日志等级管理
