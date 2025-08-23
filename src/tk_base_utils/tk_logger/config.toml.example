@@ -26,3 +26,6 @@ rotation_interval = "midnight"
 
 # 是否使用绝对路径记录caller_filename (true: 使用绝对路径, false: 仅使用文件名)
 use_absolute_path = false
+
+# 多例logger是否共享同一个日志文件
+multi_instance_shared_log = true

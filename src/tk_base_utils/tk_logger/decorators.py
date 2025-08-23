@@ -45,10 +45,15 @@ def logger_wrapper(level:LEVEL_LITERAL = "INFO",model: MODEL_LITERAL = "default"
         ... def divide(a, b):
         ...     return a / b
     """
-    # 获取单例logger实例
-    logger = get_logger()
-    # 使用logger_wrapper_multi的实现
-    return logger_wrapper_multi(logger, level, model)
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # 在运行时获取单例logger实例，避免导入时初始化
+            logger = get_logger()
+            # 使用logger_wrapper_multi的核心逻辑
+            return logger_wrapper_multi(logger, level, model)(func)(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def logger_wrapper_multi(logger: EnhancedLogger, level: LEVEL_LITERAL = "INFO", model: MODEL_LITERAL = "default") -> Callable:
