@@ -18,7 +18,7 @@ class ClientConfig(BaseModel):
     retry_backoff_factor: float = Field(default=2.0, description="重试退避因子")
     
     # 日志配置
-    log_level: str = Field(default="INFO_UTILS", description="日志级别")
+    log_level: str|None = Field(default=None, description="日志级别")
     log_requests: bool = Field(default=True, description="是否记录请求日志")
     log_responses: bool = Field(default=True, description="是否记录响应日志")
     log_file_path: Optional[str] = Field(default=None, description="日志文件路径，如果设置则持久化到文件")
