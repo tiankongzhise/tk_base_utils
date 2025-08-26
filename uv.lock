@@ -170,7 +170,7 @@ wheels = [
 
 [[package]]
 name = "tk-base-utils"
-version = "0.3.6"
+version = "0.3.7"
 source = { virtual = "." }
 dependencies = [
     { name = "httpx" },
