@@ -130,6 +130,9 @@ class HttpLogger:
     
     def _set_log_level(self) -> None:
         """设置日志级别"""
+        if self.config.log_level is None:
+            return
+        
         level_name = self.config.log_level.upper()
         
         # 使用统一的日志等级管理模块获取等级数值
